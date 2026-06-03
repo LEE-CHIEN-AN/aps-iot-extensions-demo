@@ -1,36 +1,25 @@
-// TODO: Update objectId and location (x, y, z) for each sensor to match your model.
-// In the viewer browser console, click an element then run:
-//   viewer.getSelection()           → returns [dbId]
-//   window.getBoundingBox(viewer.model, dbId)  → returns {min, max, center}
+// Sensors mapped to 6F IFC spaces in 土研2023.ifc.
+// 3 sensors per room (window / center / door) to enable IDW gradient heatmap.
 const SENSORS = {
-    'sensor-1': {
-        name: '施工區A',
-        description: '感測器 A（請更新 objectId 與座標）',
-        groupName: '地下層',
-        location: { x: -60, y: -80, z: -10 },
-        objectId: 1  // TODO: replace with actual dbId from viewer
-    },
-    'sensor-2': {
-        name: '施工區B',
-        description: '感測器 B（請更新 objectId 與座標）',
-        groupName: '地下層',
-        location: { x: -20, y: -80, z: -10 },
-        objectId: 1  // TODO: replace with actual dbId from viewer
-    },
-    'sensor-3': {
-        name: '施工區C',
-        description: '感測器 C（請更新 objectId 與座標）',
-        groupName: '1F',
-        location: { x: -40, y: -40, z: 5 },
-        objectId: 1  // TODO: replace with actual dbId from viewer
-    },
-    'sensor-4': {
-        name: '施工區D',
-        description: '感測器 D（請更新 objectId 與座標）',
-        groupName: '1F',
-        location: { x: -60, y: -40, z: 5 },
-        objectId: 1  // TODO: replace with actual dbId from viewer
-    }
+    // 601 教授室：SE角(外牆右) / 中央 / NW角(走廊左)
+    '601-se':     { name: '601 外牆右', description: '601 教授室 東南角', groupName: '6F', location: { x: 750, y: -295, z: -920 }, objectId: 2366 },
+    '601-center': { name: '601 中央',   description: '601 教授室 中央',   groupName: '6F', location: { x: 605, y: -219, z: -920 }, objectId: 2366 },
+    '601-nw':     { name: '601 走廊左', description: '601 教授室 西北角', groupName: '6F', location: { x: 460, y: -148, z: -920 }, objectId: 2366 },
+
+    // 604 特殊教室：NE角(走廊右) / 中央 / SW角(外牆左)
+    '604-ne':     { name: '604 走廊右', description: '604 特殊教室 東北角', groupName: '6F', location: { x: -445, y: -148, z: -929 }, objectId: 2370 },
+    '604-center': { name: '604 中央',   description: '604 特殊教室 中央',   groupName: '6F', location: { x: -613, y: -221, z: -929 }, objectId: 2370 },
+    '604-sw':     { name: '604 外牆左', description: '604 特殊教室 西南角', groupName: '6F', location: { x: -780, y: -295, z: -929 }, objectId: 2370 },
+
+    // 611 學生研究室：SW角(走廊側) / 中央 / NE角(外牆右)
+    '611-sw':     { name: '611 走廊側', description: '611 學生研究室 西南角', groupName: '6F', location: { x: -1650, y: 515, z: -929 }, objectId: 2389 },
+    '611-center': { name: '611 中央',   description: '611 學生研究室 中央',   groupName: '6F', location: { x: -1488, y: 606, z: -929 }, objectId: 2389 },
+    '611-ne':     { name: '611 外牆右', description: '611 學生研究室 東北角', groupName: '6F', location: { x: -1330, y: 695, z: -929 }, objectId: 2389 },
+
+    // 612 學生研究室：NW角(外牆左) / 中央 / SE角(走廊右)
+    '612-nw':     { name: '612 外牆左', description: '612 學生研究室 西北角', groupName: '6F', location: { x: -600, y: 695, z: -929 }, objectId: 2391 },
+    '612-center': { name: '612 中央',   description: '612 學生研究室 中央',   groupName: '6F', location: { x: -438, y: 606, z: -929 }, objectId: 2391 },
+    '612-se':     { name: '612 走廊右', description: '612 學生研究室 東南角', groupName: '6F', location: { x: -280, y: 515, z: -929 }, objectId: 2391 },
 };
 
 const CHANNELS = {
@@ -65,22 +54,22 @@ async function getSamples(timerange, resolution = 32) {
         count: resolution,
         timestamps: generateTimestamps(timerange.start, timerange.end, resolution),
         data: {
-            'sensor-1': {
-                'temp': generateRandomValues(18.0, 28.0, resolution, 1.0),
-                'co2': generateRandomValues(540.0, 600.0, resolution, 5.0)
-            },
-            'sensor-2': {
-                'temp': generateRandomValues(20.0, 24.0, resolution, 1.0),
-                'co2': generateRandomValues(540.0, 600.0, resolution, 5.0)
-            },
-            'sensor-3': {
-                'temp': generateRandomValues(24.0, 28.0, resolution, 1.0),
-                'co2': generateRandomValues(500.0, 620.0, resolution, 5.0)
-            },
-            'sensor-4': {
-                'temp': generateRandomValues(20.0, 24.0, resolution, 1.0),
-                'co2': generateRandomValues(600.0, 640.0, resolution, 5.0)
-            }
+            // 601：外牆右角涼(18-21°C) / 中央 / 走廊左角熱(25-28°C)
+            '601-se':     { 'temp': generateRandomValues(18.0, 21.0, resolution, 0.5), 'co2': generateRandomValues(590.0, 630.0, resolution, 4.0) },
+            '601-center': { 'temp': generateRandomValues(21.0, 24.0, resolution, 0.5), 'co2': generateRandomValues(550.0, 590.0, resolution, 4.0) },
+            '601-nw':     { 'temp': generateRandomValues(25.0, 28.0, resolution, 0.5), 'co2': generateRandomValues(500.0, 540.0, resolution, 4.0) },
+            // 604：走廊右角熱(24-27°C) / 中央 / 外牆左角涼(19-22°C)
+            '604-ne':     { 'temp': generateRandomValues(24.0, 27.0, resolution, 0.5), 'co2': generateRandomValues(500.0, 545.0, resolution, 4.0) },
+            '604-center': { 'temp': generateRandomValues(21.0, 24.0, resolution, 0.5), 'co2': generateRandomValues(545.0, 580.0, resolution, 4.0) },
+            '604-sw':     { 'temp': generateRandomValues(19.0, 22.0, resolution, 0.5), 'co2': generateRandomValues(580.0, 620.0, resolution, 4.0) },
+            // 611：走廊側角熱(25-28°C) / 中央 / 外牆右角涼(20-23°C)
+            '611-sw':     { 'temp': generateRandomValues(25.0, 28.0, resolution, 0.5), 'co2': generateRandomValues(505.0, 545.0, resolution, 4.0) },
+            '611-center': { 'temp': generateRandomValues(22.0, 25.0, resolution, 0.5), 'co2': generateRandomValues(555.0, 595.0, resolution, 4.0) },
+            '611-ne':     { 'temp': generateRandomValues(18.0, 22.0, resolution, 0.5), 'co2': generateRandomValues(600.0, 638.0, resolution, 4.0) },
+            // 612：外牆左角涼(18-21°C) / 中央 / 走廊右角熱(24-27°C)
+            '612-nw':     { 'temp': generateRandomValues(18.0, 21.0, resolution, 0.5), 'co2': generateRandomValues(595.0, 635.0, resolution, 4.0) },
+            '612-center': { 'temp': generateRandomValues(21.0, 24.0, resolution, 0.5), 'co2': generateRandomValues(555.0, 595.0, resolution, 4.0) },
+            '612-se':     { 'temp': generateRandomValues(24.0, 27.0, resolution, 0.5), 'co2': generateRandomValues(505.0, 555.0, resolution, 4.0) },
         }
     };
 }

@@ -48,9 +48,12 @@ viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, async () => {
     const dataView = new MyDataView();
     await dataView.init({ start: DEFAULT_TIMERANGE_START, end: DEFAULT_TIMERANGE_END });
 
-    // Hide Revit Room volumes so they don't clutter the 3D view.
+    // Hide room/space volumes so they don't clutter the 3D view.
     // DataViz surface shading still works with hidden room geometry.
-    viewer.search('Room', ids => { if (ids.length) viewer.hide(ids, viewer.model); }, () => {}, null, { searchHidden: true });
+    // Covers both Revit rooms ('Room') and IFC spaces ('IfcSpace').
+    for (const term of ['Room', 'IfcSpace']) {
+        viewer.search(term, ids => { if (ids.length) viewer.hide(ids, viewer.model); }, () => {}, null, { searchHidden: true });
+    }
 
     // Configure and activate our custom IoT extensions
     const extensions = [SensorListExtensionID, SensorSpritesExtensionID, SensorDetailExtensionID, SensorHeatmapsExtensionID].map(id => viewer.getExtension(id));
