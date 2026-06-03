@@ -1,6 +1,9 @@
 const express = require('express');
 const { getPublicToken } = require('./services/aps.js');
-const { getSensors, getChannels, getSamples } = require('./services/iot.mocked.js');
+const iotService = process.env.IOT_SERVICE === 'thingspeak'
+    ? require('./services/iot.thingspeak.js')
+    : require('./services/iot.mocked.js');
+const { getSensors, getChannels, getSamples } = iotService;
 const { PORT } = require('./config.js');
 
 let app = express();
@@ -32,7 +35,8 @@ app.get('/iot/channels', async function (req, res, next) {
 
 app.get('/iot/samples', async function (req, res, next) {
     try {
-        res.json(await getSamples({ start: new Date(req.query.start), end: new Date(req.query.end) }, req.query.resolution));
+        const resolution = req.query.resolution ? parseInt(req.query.resolution) : undefined;
+        res.json(await getSamples({ start: new Date(req.query.start), end: new Date(req.query.end) }, resolution));
     } catch (err) {
         next(err);
     }
@@ -43,4 +47,8 @@ app.use((err, req, res, next) => {
     res.status(500).send(err.message);
 });
 
-app.listen(PORT, function () { console.log(`Server listening on port ${PORT}...`); });
+if (require.main === module) {
+    app.listen(PORT, function () { console.log(`Server listening on port ${PORT}...`); });
+}
+
+module.exports = app;

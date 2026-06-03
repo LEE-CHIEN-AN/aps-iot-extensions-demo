@@ -8,7 +8,11 @@ const authenticationClient = new AuthenticationClient(sdkManager);
 let _credentials = null;
 async function getPublicToken() {
     if (!_credentials || _credentials.expires_at < Date.now()) {
-        _credentials = await authenticationClient.getTwoLeggedToken(APS_CLIENT_ID, APS_CLIENT_SECRET, [Scopes.ViewablesRead]);
+        // Model Derivative endpoints may require both viewables:read and data:read.
+        _credentials = await authenticationClient.getTwoLeggedToken(APS_CLIENT_ID, APS_CLIENT_SECRET, [
+            Scopes.ViewablesRead,
+            Scopes.DataRead
+        ]);
         _credentials.expires_at = Date.now() + _credentials.expires_in * 1000;
     }
     return _credentials;

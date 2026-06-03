@@ -113,7 +113,7 @@ export class MyDataView {
     getTimerange() { return this._timerange; }
 
     getSamples(sensorId, channelId) {
-        if (!this._data[sensorId] || !this._data[sensorId][channelId]) {
+        if (!this._data || !this._data[sensorId] || !this._data[sensorId][channelId]) {
             return null;
         }
         return {

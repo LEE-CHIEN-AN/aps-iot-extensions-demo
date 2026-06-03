@@ -6,9 +6,11 @@ function debounce(func, timeout = 500) {
     };
 }
 
-export function initTimeline(container, onTimeRangeChanged, onTimeMarkerChanged) {
+export function initTimeline(container, onTimeRangeChanged, onTimeMarkerChanged, startDate, endDate) {
     return new Promise(function (resolve, reject) {
-        let timeslider = new ChronosEtu.TimeSlider(container.clientWidth, container.clientHeight, '2022-01-01', '2022-02-01');
+        const startStr = startDate ? startDate.toISOString().split('T')[0] : '2022-01-01';
+        const endStr = endDate ? endDate.toISOString().split('T')[0] : '2022-02-01';
+        let timeslider = new ChronosEtu.TimeSlider(container.clientWidth, container.clientHeight, startStr, endStr);
         window.addEventListener('resize', () => {
             const { clientWidth, clientHeight } = container;
             timeslider.resize(clientWidth, clientHeight);

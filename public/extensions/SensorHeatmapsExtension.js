@@ -1,4 +1,4 @@
-/// import * as Autodesk from "@types/forge-viewer";
+//import * as Autodesk from "@types/forge-viewer";
 
 import { UIBaseExtension } from './BaseExtension.js';
 import { findNearestTimestampIndex } from './HistoricalDataView.js';
@@ -17,8 +17,9 @@ export class SensorHeatmapsExtension extends UIBaseExtension {
             /*
             The distance from the sensor that its value will affect the heatmap before dropping off.
             Measured in world coordinates of the current model. The default value is 160.0.
+            Set to 800 for a cm-unit model (≈8m radius covers a typical classroom).
             */
-            confidence: 50.0,
+            confidence: 800.0,
             /*
             A positive real number. Greater values of power parameter assign greater influence to values
             closest to the interpolated point. The default value is 2.0.
@@ -141,23 +142,34 @@ export class SensorHeatmapsExtension extends UIBaseExtension {
         }
         const shadingGroup = new Autodesk.DataVisualization.Core.SurfaceShadingGroup('iot-heatmap');
         const rooms = new Map();
-        for (const [sensorId, sensor] of this.dataView.getSensors().entries()) {
-            if (!sensor.objectId) {
+        const sensors = this.dataView.getSensors();
+        console.log(`[Heatmap] Setting up surface shading for ${sensors.size} sensor(s)`);
+        for (const [sensorId, sensor] of sensors.entries()) {
+            const shadeDbId = sensor.shadingObjectId ?? sensor.objectId;
+            if (!shadeDbId) {
+                console.warn(`[Heatmap] Sensor ${sensorId} has no objectId/shadingObjectId, skipping`);
                 continue;
             }
-            if (!rooms.has(sensor.objectId)) {
-                const room = new Autodesk.DataVisualization.Core.SurfaceShadingNode(sensorId, sensor.objectId);
+            if (!rooms.has(shadeDbId)) {
+                const room = new Autodesk.DataVisualization.Core.SurfaceShadingNode(sensorId, shadeDbId);
                 shadingGroup.addChild(room);
-                rooms.set(sensor.objectId, room);
+                rooms.set(shadeDbId, room);
+                console.log(`[Heatmap] Created SurfaceShadingNode for dbId=${shadeDbId} (room objectId=${sensor.objectId})`);
             }
-            const room = rooms.get(sensor.objectId);
+            const room = rooms.get(shadeDbId);
             const types = Array.from(this.dataView.getChannels().keys());
             room.addPoint(new Autodesk.DataVisualization.Core.SurfaceShadingPoint(sensorId, sensor.location, types));
+            console.log(`[Heatmap] Added point: ${sensorId} at`, sensor.location);
+        }
+        if (rooms.size === 0) {
+            console.error('[Heatmap] No rooms to shade — check objectId and floor z-range');
+            return;
         }
         this._surfaceShadingData = new Autodesk.DataVisualization.Core.SurfaceShadingData();
         this._surfaceShadingData.addChild(shadingGroup);
         this._surfaceShadingData.initialize(model);
         await this._dataVizExt.setupSurfaceShading(model, this._surfaceShadingData);
+        console.log('[Heatmap] setupSurfaceShading complete');
         // this._dataVizExt.registerSurfaceShadingColors('temp', [0x00ff00, 0xffff00, 0xff0000]);
     }
 }

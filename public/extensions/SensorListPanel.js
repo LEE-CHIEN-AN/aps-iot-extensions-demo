@@ -63,7 +63,8 @@ export class SensorListPanel extends Autodesk.Viewing.UI.PropertyPanel {
                 const samples = dataView.getSamples(sensorId, channelId);
                 if (samples) {
                     const closestIndex = findNearestTimestampIndex(samples.timestamps, timestamp); // TODO: reuse this code from BaseExtension
-                    row[channelId] = `${samples.values[closestIndex].toFixed(2)} ${channel.unit}`;
+                    const v = samples.values[closestIndex];
+                    row[channelId] = (v != null && !isNaN(v)) ? `${v.toFixed(2)} ${channel.unit}` : '—';
                 }
             }
             rows.push(row);

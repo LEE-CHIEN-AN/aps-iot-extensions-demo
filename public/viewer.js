@@ -42,7 +42,12 @@ export function initViewer(container, extensions) {
 export function loadModel(viewer, urn, guid) {
     return new Promise(function (resolve, reject) {
         function onDocumentLoadSuccess(doc) {
-            const viewable = guid ? doc.getRoot().findByGuid(guid) : doc.getRoot().getDefaultGeometry();
+            // Try the specified GUID first; fall back to default master view if not found.
+            // getDefaultGeometry(true) picks the last master view, which survives re-translations.
+            const root = doc.getRoot();
+            const viewable = (guid && root.findByGuid(guid))
+                || (root.search && root.search({ type: 'geometry', role: '3d' })?.[0])
+                || root.getDefaultGeometry(true);
             resolve(viewer.loadDocumentNode(doc, viewable));
         }
         function onDocumentLoadFailure(code, message, errors) {
