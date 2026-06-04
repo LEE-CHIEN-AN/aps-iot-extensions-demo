@@ -1,35 +1,47 @@
-// TODO: Update objectId and location (x, y, z) for each sensor to match your model.
-// In the viewer browser console, click an element then run:
-//   viewer.getSelection()           → returns [dbId]
-//   window.getBoundingBox(viewer.model, dbId)  → returns {min, max, center}
+// Sensors for Room 604 (6F Special Classroom) in 土研2023.rvt.
+// objectId=11405: Revit Room 604 dbId (fragCount=0, no mesh — data reference only)
+// shadingObjectId=11531: 6F floor slab dbId (has mesh — DataViz renders heatmap here)
+// Locations from clientToWorld measurements in APS Viewer (feet).
 const SENSORS = {
-    'sensor-1': {
-        name: '施工區A',
-        description: '感測器 A（請更新 objectId 與座標）',
-        groupName: '地下層',
-        location: { x: -60, y: -80, z: -10 },
-        objectId: 1  // TODO: replace with actual dbId from viewer
+    '604-window': {
+        name: '604 靠窗',
+        description: '靠窗（涼）',
+        groupName: '6F',
+        location: { x: -24.6, y: 0.3, z: 12.7 },
+        objectId: 11405,
+        shadingObjectId: 11531
     },
-    'sensor-2': {
-        name: '施工區B',
-        description: '感測器 B（請更新 objectId 與座標）',
-        groupName: '地下層',
-        location: { x: -20, y: -80, z: -10 },
-        objectId: 1  // TODO: replace with actual dbId from viewer
+    '604-door': {
+        name: '604 門口',
+        description: '門口（中）',
+        groupName: '6F',
+        location: { x: -24.6, y: -16.7, z: 12.7 },
+        objectId: 11405,
+        shadingObjectId: 11531
     },
-    'sensor-3': {
-        name: '施工區C',
-        description: '感測器 C（請更新 objectId 與座標）',
-        groupName: '1F',
-        location: { x: -40, y: -40, z: 5 },
-        objectId: 1  // TODO: replace with actual dbId from viewer
+    '604-center': {
+        name: '604 中央',
+        description: '中央（中）',
+        groupName: '6F',
+        location: { x: -17.7, y: -7.9, z: 12.7 },
+        objectId: 11405,
+        shadingObjectId: 11531
     },
-    'sensor-4': {
-        name: '施工區D',
-        description: '感測器 D（請更新 objectId 與座標）',
-        groupName: '1F',
-        location: { x: -60, y: -40, z: 5 },
-        objectId: 1  // TODO: replace with actual dbId from viewer
+    '604-wall': {
+        name: '604 牆邊',
+        description: '牆邊（熱）',
+        groupName: '6F',
+        location: { x: -10.6, y: -16.7, z: 12.7 },
+        objectId: 11405,
+        shadingObjectId: 11531
+    },
+    '604-aircondition': {
+        name: '604 冷氣旁',
+        description: '冷氣旁（涼）',
+        groupName: '6F',
+        location: { x: -10.6, y: 0.3, z: 12.7 },
+        objectId: 11405,
+        shadingObjectId: 11531
     }
 };
 
@@ -65,22 +77,11 @@ async function getSamples(timerange, resolution = 32) {
         count: resolution,
         timestamps: generateTimestamps(timerange.start, timerange.end, resolution),
         data: {
-            'sensor-1': {
-                'temp': generateRandomValues(18.0, 28.0, resolution, 1.0),
-                'co2': generateRandomValues(540.0, 600.0, resolution, 5.0)
-            },
-            'sensor-2': {
-                'temp': generateRandomValues(20.0, 24.0, resolution, 1.0),
-                'co2': generateRandomValues(540.0, 600.0, resolution, 5.0)
-            },
-            'sensor-3': {
-                'temp': generateRandomValues(24.0, 28.0, resolution, 1.0),
-                'co2': generateRandomValues(500.0, 620.0, resolution, 5.0)
-            },
-            'sensor-4': {
-                'temp': generateRandomValues(20.0, 24.0, resolution, 1.0),
-                'co2': generateRandomValues(600.0, 640.0, resolution, 5.0)
-            }
+            '604-window':      { 'temp': generateRandomValues(18.0, 21.0, resolution, 0.5), 'co2': generateRandomValues(590.0, 630.0, resolution, 4.0) },
+            '604-door':        { 'temp': generateRandomValues(22.0, 25.0, resolution, 0.5), 'co2': generateRandomValues(555.0, 590.0, resolution, 4.0) },
+            '604-center':      { 'temp': generateRandomValues(21.0, 24.0, resolution, 0.5), 'co2': generateRandomValues(545.0, 580.0, resolution, 4.0) },
+            '604-wall':        { 'temp': generateRandomValues(24.0, 27.0, resolution, 0.5), 'co2': generateRandomValues(510.0, 550.0, resolution, 4.0) },
+            '604-aircondition':{ 'temp': generateRandomValues(19.0, 22.0, resolution, 0.5), 'co2': generateRandomValues(500.0, 535.0, resolution, 4.0) }
         }
     };
 }
