@@ -123,17 +123,28 @@ viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, async (event) =>
     viewer.search('Room', ids => { if (ids.length) viewer.hide(ids, viewer.model); }, () => {}, null, { searchHidden: true });
 
     // Try to load Revit rooms as an aggregated model so DataViz can shade room volumes directly.
-    // Falls back to shadingObjectId (floor slab) if rooms have no 3D viewable_in entries.
+    // Falls back to shadingObjectId (floor slab) if rooms have no geometry in the aggregated model.
     const roomModel = await loadRoomsAsync(viewer, viewer.model);
     if (roomModel) {
-        // Hide room geometry visually; DataViz still uses the mesh for heatmap bounds.
+        // Verify rooms actually have 3D geometry in the aggregated model before using it.
         const roomTree = roomModel.getInstanceTree();
+        let roomFragCount = 0;
         if (roomTree) {
+            // Sample the first room from our sensor config to check for geometry.
+            roomTree.enumNodeFragments(11405, () => roomFragCount++, true);
+        }
+        if (roomFragCount > 0) {
+            // Rooms have mesh — hide visually (DataViz still uses the geometry), then activate.
             const allRoomIds = [];
             roomTree.enumNodeChildren(roomTree.getRootId(), id => allRoomIds.push(id), true);
             if (allRoomIds.length) viewer.hide(allRoomIds, roomModel);
+            viewer.getExtension(SensorHeatmapsExtensionID).shadingModel = roomModel;
+            console.log('[Rooms] Aggregated room model has geometry — DataViz will shade room volumes.');
+        } else {
+            // No geometry in aggregated model; unload it and fall back to shadingObjectId.
+            viewer.unloadModel(roomModel);
+            console.warn('[Rooms] Aggregated room model fragCount=0 — unloaded, falling back to shadingObjectId (floor slab).');
         }
-        viewer.getExtension(SensorHeatmapsExtensionID).shadingModel = roomModel;
     }
 
     // Configure and activate our custom IoT extensions
