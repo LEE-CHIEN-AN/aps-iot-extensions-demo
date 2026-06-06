@@ -24,7 +24,7 @@ const EXTENSIONS = [
     'Autodesk.AEC.LevelsExtension'
 ];
 
-async function getRoomDbIdsAsync(model, categoryName = '房間') {
+async function getRoomDbIdsAsync(model, categoryName = 'Revit 房間') {
     return new Promise((resolve, reject) => {
         model.search(categoryName, resolve, reject, ['Category'], { searchHidden: true });
     });
@@ -50,7 +50,7 @@ async function loadRoomsAsync(viewer, model) {
         return null;
     }
     if (!roomDbIds.length) {
-        console.warn('[loadRoomsAsync] No room dbIds found. Check category name (try "Revit Rooms" if "房間" fails).');
+        console.warn('[loadRoomsAsync] No room dbIds found. Category name used: "Revit 房間". Check with model.getProperties(dbId, ...).');
         return null;
     }
     console.log(`[loadRoomsAsync] Found ${roomDbIds.length} room dbIds`);
