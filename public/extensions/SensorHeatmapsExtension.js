@@ -12,6 +12,7 @@ export class SensorHeatmapsExtension extends UIBaseExtension {
         this.panel = undefined;
         this._surfaceShadingData = undefined;
         this.onChannelChanged = undefined;
+        this.shadingModel = null; // override: use aggregated room model if available
         this.getSensorValue = this.getSensorValue.bind(this);
         this.heatmapConfig = {
             /*
@@ -74,7 +75,7 @@ export class SensorHeatmapsExtension extends UIBaseExtension {
     async createHeatmaps() {
         if (this.isActive()) {
             const channelID = this.currentChannelID;
-            await this._setupSurfaceShading(this.viewer.model);
+            await this._setupSurfaceShading(this.shadingModel || this.viewer.model);
             this._dataVizExt.renderSurfaceShading('iot-heatmap', channelID, this.getSensorValue, { heatmapConfig: this.heatmapConfig });
         }
     }
@@ -83,7 +84,7 @@ export class SensorHeatmapsExtension extends UIBaseExtension {
         if (this.isActive()) {
             const channelID = this.currentChannelID;
             if (!this._surfaceShadingData) {
-                await this._setupSurfaceShading(this.viewer.model);
+                await this._setupSurfaceShading(this.shadingModel || this.viewer.model);
                 this._dataVizExt.renderSurfaceShading('iot-heatmap', channelID, this.getSensorValue, { heatmapConfig: this.heatmapConfig });
             }
             else {

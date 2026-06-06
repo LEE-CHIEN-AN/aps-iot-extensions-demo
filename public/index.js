@@ -24,6 +24,74 @@ const EXTENSIONS = [
     'Autodesk.AEC.LevelsExtension'
 ];
 
+async function getRoomDbIdsAsync(model, categoryName = '房間') {
+    return new Promise((resolve, reject) => {
+        model.search(categoryName, resolve, reject, ['Category'], { searchHidden: true });
+    });
+}
+
+async function getBulkPropertiesAsync(model, dbIds) {
+    return new Promise((resolve, reject) => {
+        model.getBulkProperties2(
+            dbIds,
+            { ignoreHidden: false, propFilter: ['viewable_in'] },
+            resolve, reject
+        );
+    });
+}
+
+async function loadRoomsAsync(viewer, model) {
+    const doc = model.getDocumentNode().getDocument();
+    let roomDbIds;
+    try {
+        roomDbIds = await getRoomDbIdsAsync(model);
+    } catch (e) {
+        console.warn('[loadRoomsAsync] Category search failed:', e);
+        return null;
+    }
+    if (!roomDbIds.length) {
+        console.warn('[loadRoomsAsync] No room dbIds found. Check category name (try "Revit Rooms" if "房間" fails).');
+        return null;
+    }
+    console.log(`[loadRoomsAsync] Found ${roomDbIds.length} room dbIds`);
+
+    const result = await getBulkPropertiesAsync(model, roomDbIds);
+    const roomInfoMap = {};
+    result.forEach(r => {
+        const viewableIds = r.properties.map(p => p.displayValue);
+        for (const viewableId of viewableIds) {
+            const bubble = doc.getRoot().findByGuid(viewableId);
+            if (!bubble || bubble.is2D()) continue;
+            if (roomInfoMap[viewableId]) {
+                roomInfoMap[viewableId].dbIds.push(r.dbId);
+            } else {
+                roomInfoMap[viewableId] = { bubble, dbIds: [r.dbId] };
+            }
+        }
+    });
+
+    const data = Object.values(roomInfoMap);
+    if (!data.length) {
+        console.warn('[loadRoomsAsync] Rooms have no 3D viewable_in entries. fragCount will remain 0 — shadingObjectId fallback still active.');
+        return null;
+    }
+    console.log(`[loadRoomsAsync] Loading rooms from ${data.length} 3D viewable(s)`);
+
+    let roomModel = null;
+    for (const info of data) {
+        roomModel = await viewer.loadDocumentNode(doc, info.bubble, {
+            ids: info.dbIds,
+            modelNameOverride: 'Rooms',
+            keepCurrentModels: true,
+            globalOffset: new THREE.Vector3(),
+            placementTransform: model.getModelToViewerTransform()
+        });
+        await viewer.waitForLoadDone();
+    }
+    console.log('[loadRoomsAsync] Room model loaded:', roomModel);
+    return roomModel;
+}
+
 const viewer = await initViewer(document.getElementById('preview'), EXTENSIONS);
 // Expose viewer for troubleshooting & sensor placement helpers.
 window.NOP_VIEWER = viewer;
@@ -39,7 +107,9 @@ try {
     ].join('\n'));
     throw err;
 }
-viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, async () => {
+viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, async (event) => {
+    // Guard: only initialize once, for the primary model. Aggregated room models also fire this event.
+    if (event.model !== viewer.model) return;
     // Initialize the timeline with the correct date range so that the
     // 'tscreated' event fires with the same range as the data, not 2022.
     initTimeline(document.getElementById('timeline'), onTimeRangeChanged, onTimeMarkerChanged, DEFAULT_TIMERANGE_START, DEFAULT_TIMERANGE_END);
@@ -51,6 +121,20 @@ viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, async () => {
     // Hide Revit Room volumes so they don't clutter the 3D view.
     // DataViz surface shading still works with hidden room geometry.
     viewer.search('Room', ids => { if (ids.length) viewer.hide(ids, viewer.model); }, () => {}, null, { searchHidden: true });
+
+    // Try to load Revit rooms as an aggregated model so DataViz can shade room volumes directly.
+    // Falls back to shadingObjectId (floor slab) if rooms have no 3D viewable_in entries.
+    const roomModel = await loadRoomsAsync(viewer, viewer.model);
+    if (roomModel) {
+        // Hide room geometry visually; DataViz still uses the mesh for heatmap bounds.
+        const roomTree = roomModel.getInstanceTree();
+        if (roomTree) {
+            const allRoomIds = [];
+            roomTree.enumNodeChildren(roomTree.getRootId(), id => allRoomIds.push(id), true);
+            if (allRoomIds.length) viewer.hide(allRoomIds, roomModel);
+        }
+        viewer.getExtension(SensorHeatmapsExtensionID).shadingModel = roomModel;
+    }
 
     // Configure and activate our custom IoT extensions
     const extensions = [SensorListExtensionID, SensorSpritesExtensionID, SensorDetailExtensionID, SensorHeatmapsExtensionID].map(id => viewer.getExtension(id));
